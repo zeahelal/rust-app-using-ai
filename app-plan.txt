@@ -1,0 +1,1001 @@
+Secure System Architecture Documentation For Building Full Stack Rust language application
+
+
+Modern Rust-Based Application
+Full Stack Secure System with PostgreSQL Database
+Version 1.0 | Date: 2024
+
+
+1. Project Overview and Architecture
+
+This documentation outlines the architecture for a modern, secure web application built entirely in Rust, leveraging the language's memory safety guarantees and performance characteristics for both frontend and backend development. The system implements a microservices architecture pattern with strong security foundations and modern UX/UI principles.
+
+1.1 Core Architecture Principles
+
+Memory Safety: Rust's ownership system prevents common vulnerabilities Zero-Cost Abstractions: High-level features without runtime overhead Concurrent Safety: Built-in protection against data races
+Modular Design: Clean separation of concerns with well-defined interfaces
+Security-First: Defense in depth with multiple security layers
+
+
+
+System Architecture Overview
++-------------------------------------------------------------+
+¦
+¦
+
++-------------+
+Frontend (Rust/WASM)	¦
++-------------+  +---------------------+ ¦
+¦
+¦
+Yew
+¦
+¦
+Trunk
+¦
+¦
+Theme Manager
+¦ ¦
+¦
+¦
+Components
+¦
+¦
+Builder
+¦
+¦
+(Dark/Light)
+¦ ¦
+¦
++-------------+
++-------------+
++---------------------+ ¦
++-------------------------------------------------------------+
+        ¦ HTTPS/WSS
+¦
++-------------------------------------------------------------+
+¦	API Gateway & Load Balancer	¦
+¦	(Nginx)	¦
++-------------------------------------------------------------+
+¦
++-------------------------------------------------------------+
+¦	Backend Services (Rust)	¦
+
+¦
++-------------+
++-------------+
++---------------------+
+¦
+¦
+¦
+Axum
+¦
+¦	Tower
+¦
+¦
+Authentication
+¦
+¦
+¦
+¦
+Web Server
+¦
+¦ Middleware
+¦
+¦
+Service
+¦
+¦
+¦
++-------------+
++-------------+
++---------------------+
+¦
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+2. Technology Stack
+
+
+Component
+Technology
+Version
+Purpose
+
+Backend Framework
+
+Axum
+
+0.7+
+
+High-performance async web framework
+
+Frontend Framework
+
+Yew
+
+0.21+
+
+Rust/WebAssembly frontend framework
+
+Build Tool
+
+Trunk
+
+0.18+
+
+WASM web application bundler
+
+Database
+
+PostgreSQL
+
+15+
+
+Primary data storage
+
+ORM
+
+SQLx
+
+0.7+
+
+Async SQL toolkit
+
+Authentication
+
+JWT + Argon2
+
+Latest
+
+Secure token-based auth
+
+HTTP Client
+
+Reqwest
+
+0.11+
+
+HTTP client for API calls
+
+Serialization
+
+Serde
+
+1.0+
+
+JSON/data serialization
+
+Cache
+
+Redis
+
+7+
+
+Session and application cache
+
+Process Manager
+
+PM2
+
+5+
+
+Application deployment and monitoring
+
+3. Security Implementation
+
+
+?? Security-First Approach
+
+
+
+3.1 Backend Security
+
+// Security middleware implementation use axum::{
+middleware::{self, Next},
+response::Response, Request,
+};
+use tower_http::{ cors::CorsLayer, helmet::HelmetLayer, trace::TraceLayer,
+};
+
+pub fn security_layers() -> tower::ServiceBuilder< tower::util::Stack<
+tower::util::Stack, TraceLayer>,
+>,
+> {
+tower::ServiceBuilder::new()
+.layer(HelmetLayer::new()) // Security headers
+.layer(CorsLayer::very_restrictive()) // CORS protection
+.layer(TraceLayer::new_for_http()) // Request tracing
+}
+
+// JWT Authentication
+#[derive(Debug, Serialize, Deserialize)] pub struct Claims {
+pub sub: String,
+pub exp: usize, pub iat: usize, pub roles: Vec,
+}
+
+pub async fn validate_jwt(token: &str) -> Result { let secret = env::var("JWT_SECRET")?;
+let key = DecodingKey::from_secret(secret.as_ref());
+
+decode::(
+token, &key,
+&Validation::new(Algorithm::HS256),
+)
+
+
+
+3.2 Security Features
+
+Memory Safety: Rust's ownership system prevents buffer overflows SQL Injection Prevention: SQLx compile-time query checking CSRF Protection: Token-based CSRF mitigation
+XSS Prevention: Content Security Policy headers Rate Limiting: Request throttling per IP/user Input Validation: Comprehensive data validation Secure Headers: HSTS, X-Frame-Options, etc.
+Password Hashing: Argon2id with salt
+
+4. Modern File Structure
+
+
+project-root/ +-- backend/ ¦ +-- Cargo.toml ¦ +-- src/ ¦ ¦ +-- main.rs ¦ ¦
++-- lib.rs ¦ ¦ +-- config/ ¦ ¦ ¦ +-- mod.rs ¦ ¦ ¦ +-- database.rs ¦ ¦ ¦ +-- auth.rs ¦ ¦ ¦ +-- server.rs ¦ ¦ +-- handlers/ ¦ ¦ ¦ +-- mod.rs ¦ ¦ ¦ +-- auth.rs ¦ ¦ ¦ +-- users.rs ¦ ¦ ¦ +-- api.rs ¦ ¦ +-- middleware/ ¦ ¦ ¦ +-- mod.rs ¦ ¦ ¦ +-- auth.rs ¦ ¦ ¦ +-- cors.rs ¦ ¦ ¦ +-- security.rs ¦ ¦ +-- models/ ¦ ¦ ¦ +-- mod.rs ¦ ¦ ¦ +-- user.rs ¦ ¦ ¦ +-- auth.rs ¦ ¦ +-- services/ ¦ ¦ ¦ +-- mod.rs ¦ ¦ ¦ +-- user_service.rs ¦ ¦ ¦ +-- auth_service.rs ¦ ¦ ¦ +-- email_service.rs ¦ ¦ +-- utils/ ¦ ¦ ¦ +-- mod.rs ¦
+¦ ¦ +-- crypto.rs ¦ ¦ ¦ +-- validation.rs ¦ ¦ ¦ +-- errors.rs ¦ ¦ +-- db/ ¦ ¦
++-- mod.rs ¦ ¦ +-- connection.rs ¦ ¦ +-- migrations/ ¦ +-- migrations/ ¦ ¦
++-- 001_initial_schema.sql ¦ ¦ +-- 002_add_users_table.sql ¦ ¦ +-- 003_add_sessions_table.sql ¦ +-- tests/ ¦ +-- integration/ ¦ ¦ +-- auth_tests.rs ¦ ¦ +-- api_tests.rs ¦ +-- unit/ ¦ +-- models_tests.rs ¦ +-- services_tests.rs +-- frontend/ ¦ +-- Cargo.toml ¦ +-- Trunk.toml ¦ +-- index.html ¦ +-- src/ ¦ ¦ +-- main.rs ¦ ¦ +-- lib.rs ¦ ¦ +-- app.rs ¦ ¦ +-- components/ ¦ ¦ ¦ +-- mod.rs ¦ ¦ ¦ +-- layout/ ¦ ¦ ¦ ¦ +-- mod.rs ¦ ¦ ¦ ¦ +-- header.rs ¦ ¦ ¦ ¦ +-- sidebar.rs ¦ ¦ ¦ ¦ +-- footer.rs ¦ ¦ ¦ +-- auth/ ¦ ¦ ¦
+¦ +-- mod.rs ¦ ¦ ¦ ¦ +-- login.rs ¦ ¦ ¦ ¦ +-- register.rs ¦ ¦ ¦ +-- ui/ ¦ ¦ ¦
+¦ +-- mod.rs ¦ ¦ ¦ ¦ +-- button.rs ¦ ¦ ¦ ¦ +-- input.rs ¦ ¦ ¦ ¦ +-- modal.rs
+¦ ¦ ¦ ¦ +-- theme_toggle.rs ¦ ¦ ¦ +-- pages/ ¦ ¦ ¦ +-- mod.rs ¦ ¦ ¦ +-- dashboard.rs ¦ ¦ ¦ +-- profile.rs ¦ ¦ ¦ +-- settings.rs ¦ ¦ +-- services/ ¦ ¦
+¦ +-- mod.rs ¦ ¦ ¦ +-- api.rs ¦ ¦ ¦ +-- auth.rs ¦ ¦ ¦ +-- storage.rs ¦ ¦ +-- hooks/ ¦ ¦ ¦ +-- mod.rs ¦ ¦ ¦ +-- use_auth.rs ¦ ¦ ¦ +-- use_theme.rs ¦ ¦ ¦
++-- use_api.rs ¦ ¦ +-- utils/ ¦ ¦ ¦ +-- mod.rs ¦ ¦ ¦ +-- routes.rs ¦ ¦ ¦ +-- validation.rs ¦ ¦ +-- styles/ ¦ ¦ +-- main.scss ¦ ¦ +-- components/ ¦ ¦ ¦ +--
+_buttons.scss ¦ ¦ ¦ +-- _forms.scss ¦ ¦ ¦ +-- _layout.scss ¦ ¦ +-- themes/ ¦
+¦ +-- _light.scss ¦ ¦ +-- _dark.scss ¦ +-- static/ ¦ +-- assets/ ¦ ¦ +-- images/ ¦ ¦ +-- icons/ ¦ ¦ +-- fonts/ ¦ +-- manifest.json +-- shared/ ¦ +-- Cargo.toml ¦ +-- src/ ¦ +-- lib.rs ¦ +-- models/ ¦ ¦ +-- mod.rs ¦ ¦ +--
+
+
+
+5. UX/UI Design with Dark/Light Themes
+
+
+5.1 Theme System Architecture
+
+The theme system is built using CSS custom properties (variables) and Rust state management, providing seamless switching between light and dark modes with user preference persistence.
+
+// Theme management hook use yew::prelude::*;
+use web_sys::window;
+
+#[derive(Clone, PartialEq)] pub enum Theme {
+Light, Dark,
+}
+
+impl Theme {
+pub fn toggle(&self) -> Self { match self {
+Theme::Light => Theme::Dark, Theme::Dark => Theme::Light,
+}
+}
+
+pub fn css_class(&self) -> &'static str { match self {
+Theme::Light => "theme-light",
+Theme::Dark => "theme-dark",
+}
+}
+}
+
+#[hook]
+pub fn use_theme() -> (Theme, Callback) { let theme = use_state(|| {
+// Load theme from localStorage or detect system preference if let Some(storage) =
+window().unwrap().local_storage().unwrap() {
+if let Ok(Some(saved_theme)) = storage.get_item("theme") {
+
+match saved_theme.as_str() { "dark" => return Theme::Dark,
+_ => return Theme::Light,
+}
+}
+}
+
+// Detect system preference if window().unwrap()
+.match_media("(prefers-color-scheme: dark)")
+.unwrap()
+.unwrap()
+.matches() { Theme::Dark
+} else {
+Theme::Light
+}
+});
+
+let toggle_theme = {
+let theme = theme.clone(); Callback::from(move |_| {
+let new_theme = (*theme).toggle();
+
+// Save to localStorage if let Some(storage) =
+window().unwrap().local_storage().unwrap() {
+let _ = storage.set_item("theme", match new_theme {
+Theme::Dark => "dark", Theme::Light => "light",
+}
+);
+}
+
+theme.set(new_theme);
+})
+};
+
+((*theme).clone(), toggle_theme)
+}
+
+
+5.2 CSS Theme Variables
+
+
+/* CSS Custom Properties for Theming */
+:root {
+--transition-speed: 0.3s;
+}
+
+
+.theme-light {
+--color-primary: #3498db;
+--color-secondary: #2ecc71;
+--color-accent: #e74c3c;
+--color-background: #ffffff;
+--color-surface: #f8f9fa;
+--color-text-primary: #2c3e50;
+--color-text-secondary: #7f8c8d;
+--color-border: #dee2e6;
+--shadow-light: 0 2px 4px rgba(0,0,0,0.1);
+--shadow-medium: 0 4px 8px rgba(0,0,0,0.15);
+--shadow-heavy: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.theme-dark {
+--color-primary: #5dade2;
+--color-secondary: #58d68d;
+--color-accent: #ec7063;
+--color-background: #1a1a1a;
+--color-surface: #2d2d2d;
+--color-text-primary: #ecf0f1;
+--color-text-secondary: #bdc3c7;
+--color-border: #404040;
+--shadow-light: 0 2px 4px rgba(0,0,0,0.3);
+--shadow-medium: 0 4px 8px rgba(0,0,0,0.4);
+--shadow-heavy: 0 8px 16px rgba(0,0,0,0.5);
+}
+
+/* Component Styling */
+.app-container {
+background-color: var(--color-background); color: var(--color-text-primary);
+transition: background-color var(--transition-speed),
+              color var(--transition-speed); min-height: 100vh;
+}
+
+.card {
+background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px;
+padding: 1.5rem;
+box-shadow: var(--shadow-light); transition: all var(--transition-speed);
+}
+
+.btn-primary {
+background-color: var(--color-primary); color: white;
+
+
+
+5.3 UI Component Architecture
+
+Atomic Design: Components organized as atoms, molecules, organisms Responsive Design: Mobile-first approach with breakpoints Accessibility: WCAG 2.1 AA compliance with ARIA labels Performance: Lazy loading and virtual scrolling for large lists Consistency: Design system with standardized spacing and typography
+
+6. Database Design
+
+
+6.1 PostgreSQL Schema Design
+
+-- Users table with security features CREATE TABLE users (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+username VARCHAR(50) UNIQUE NOT NULL, email VARCHAR(100) UNIQUE NOT NULL,
+password_hash VARCHAR(255) NOT NULL, salt VARCHAR(255) NOT NULL,
+role VARCHAR(20) NOT NULL DEFAULT 'user',
+is_active BOOLEAN DEFAULT true, email_verified BOOLEAN DEFAULT false, failed_login_attempts INTEGER DEFAULT 0, locked_until TIMESTAMP WITH TIME ZONE, last_login TIMESTAMP WITH TIME ZONE,
+created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sessions table for JWT token management CREATE TABLE user_sessions (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+token_hash VARCHAR(255) NOT NULL, ip_address INET,
+user_agent TEXT,
+expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, last_accessed TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Audit log for security tracking CREATE TABLE audit_logs (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID REFERENCES users(id),
+action VARCHAR(50) NOT NULL,
+resource_type VARCHAR(50), resource_id UUID, ip_address INET, user_agent TEXT,
+details JSONB,
+created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User preferences including theme CREATE TABLE user_preferences (
+user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+theme VARCHAR(10) DEFAULT 'light', language VARCHAR(10) DEFAULT 'en', timezone VARCHAR(50) DEFAULT 'UTC',
+notifications_enabled BOOLEAN DEFAULT true, preferences JSONB DEFAULT '{}',
+updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for performance
+CREATE INDEX idx_users_email ON users(email); CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX idx_sessions_expires_at ON user_sessions(expires_at); CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
+
+-- Row Level Security (RLS)
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY users_own_data ON users FOR ALL TO authenticated_user USING (id = current_user_id());
+
+
+
+6.2 Database Connection and Migration Management
+
+
+// Database configuration and connection pool
+use sqlx::{PgPool, Row, migrate::MigrateDatabase, Postgres}; use std::env;
+
+#[derive(Clone)]
+pub struct Database { pool: PgPool,
+}
+
+impl Database {
+pub async fn new() -> Result {
+let database_url = env::var("DATABASE_URL")
+.expect("DATABASE_URL must be set");
+
+// Create database if it doesn't exist if
+!Postgres::database_exists(&database_url).await.unwrap_or(false) {
+Postgres::create_database(&database_url).await?;
+}
+
+// Create connection pool with optimized settings let pool = PgPool::connect_with(
+sqlx::postgres::PgPoolOptions::new()
+.max_connections(20)
+.min_connections(5)
+.acquire_timeout(Duration::from_secs(30))
+.idle_timeout(Duration::from_secs(600))
+.max_lifetime(Duration::from_secs(1800))
+.parse(&database_url)
+.expect("Failed to parse DATABASE_URL")
+).await?;
+
+// Run migrations sqlx::migrate!("./migrations").run(&pool).await?;
+
+Ok(Self { pool })
+}
+
+pub fn pool(&self) -> &PgPool { &self.pool
+
+
+
+7. API Architecture
+
+
+7.1 RESTful API Design
+
+
+// API router configuration with versioning use axum::{
+routing::{get, post, put, delete}, Router,
+Json, Extension,
+};
+use tower_http::trace::TraceLayer;
+
+pub fn create_api_router() -> Router { Router::new()
+// Health check
+.route("/health", get(health_check))
+
+// API v1 routes
+.nest("/api/v1", api_v1_routes())
+
+// Middleware
+.layer(TraceLayer::new_for_http())
+.layer(Extension(database_pool))
+.layer(security_layers())
+}
+
+fn api_v1_routes() -> Router { Router::new()
+// Authentication endpoints
+.nest("/auth", auth_routes())
+
+// User management
+.nest("/users", user_routes())
+
+// Protected routes
+.nest("/dashboard", dashboard_routes())
+}
+
+fn auth_routes() -> Router { Router::new()
+.route("/register", post(register_user))
+.route("/login", post(login_user))
+.route("/logout", post(logout_user))
+
+.route("/refresh", post(refresh_token))
+.route("/verify-email", post(verify_email))
+.route("/forgot-password", post(forgot_password))
+.route("/reset-password", post(reset_password))
+}
+
+// Request/Response models #[derive(Debug, Serialize, Deserialize)] pub struct RegisterRequest {
+pub username: String, pub email: String, pub password: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)] pub struct LoginRequest {
+pub email: String,
+pub password: String, pub remember_me: Option,
+}
+
+#[derive(Debug, Serialize, Deserialize)] pub struct AuthResponse {
+pub access_token: String,
+pub refresh_token: String, pub expires_in: i64,
+pub user: UserProfile,
+}
+
+// Error handling
+#[derive(Debug, Serialize, Deserialize)] pub struct ApiError {
+pub code: String, pub message: String, pub details: Option,
+}
+
+impl IntoResponse for ApiError {
+fn into_response(self) -> Response {
+let status = match self.code.as_str() { "VALIDATION_ERROR" => StatusCode::BAD_REQUEST, "UNAUTHORIZED" => StatusCode::UNAUTHORIZED, "FORBIDDEN" => StatusCode::FORBIDDEN, "NOT_FOUND" => StatusCode::NOT_FOUND,
+_ => StatusCode::INTERNAL_SERVER_ERROR,
+};
+
+(status, Json(self)).into_response()
+
+
+
+7.2 API Security and Rate Limiting
+
+
+// Rate limiting middleware use std::collections::HashMap; use std::sync::Arc;
+use tokio::sync::Mutex;
+use std::time::{Duration, Instant};
+
+#[derive(Clone)]
+pub struct RateLimiter { requests: Arc>>>, max_requests: usize, window_duration: Duration,
+}
+
+impl RateLimiter {
+pub fn new(max_requests: usize, window_minutes: u64) -> Self { Self {
+requests: Arc::new(Mutex::new(HashMap::new())), max_requests,
+window_duration: Duration::from_secs(window_minutes * 60),
+}
+}
+
+pub async fn is_allowed(&self, key: &str) -> bool { let mut requests = self.requests.lock().await; let now = Instant::now();
+
+          let user_requests = requests.entry(key.to_string()).or_insert_with(Vec::new);
+
+// Remove old requests outside the window user_requests.retain(|×tamp| {
+now.duration_since(timestamp) < self.window_duration
+});
+
+// Check if under the limit
+if user_requests.len() < self.max_requests { user_requests.push(now);
+true
+} else {
+false
+}
+}
+}
+
+
+
+8. Frontend Architecture (Rust-based)
+
+
+8.1 Yew Component Architecture
+
+// Main application component use yew::prelude::*;
+use yew_router::prelude::*;
+
+#[derive(Clone, Routable, PartialEq)] pub enum Route {
+#[at("/")] Home, #[at("/login")] Login,
+#[at("/dashboard")] Dashboard, #[at("/profile")] Profile, #[not_found] #[at("/404")]
+NotFound,
+}
+
+
+#[function_component(App)] pub fn app() -> Html {
+let (theme, toggle_theme) = use_theme();
+let auth_context = use_context::().expect("AuthContext not found");
+
+html! {
+context={theme.clone()}>
+
+
+
+
+
+
+
+
+
+render={switch} />
+
+
+
+
+
+
+
+
+
+
+>
+}
+}
+
+fn switch(routes: Route) -> Html { match routes {
+Route::Home => html! { }, Route::Login => html! { }, Route::Dashboard => html! {
+
+
+
+},
+Route::Profile => html! {
+
+
+
+
+},
+Route::NotFound => html! { },
+}
+}
+
+// Authentication context #[derive(Clone, Debug, PartialEq)] pub struct AuthContext {
+pub user: Option,
+pub is_loading: bool,
+
+pub login: Callback,
+pub logout: Callback<()>,
+}
+
+#[hook]
+pub fn use_auth() -> AuthContext {
+let user_state = use_state(|| None::); let loading_state = use_state(|| false);
+
+let login = {
+let user_state = user_state.clone();
+let loading_state = loading_state.clone();
+
+Callback::from(move |credentials: LoginCredentials| { let user_state = user_state.clone();
+let loading_state = loading_state.clone();
+
+wasm_bindgen_futures::spawn_local(async move { loading_state.set(true);
+
+match api::login(credentials).await { Ok(response) => {
+// Store tokens storage::set_token(&response.access_token);
+
+storage::set_refresh_token(&response.refresh_token);
+user_state.set(Some(response.user));
+},
+Err(error) => {
+// Handle login error web_sys::console::error_1(&format!("Login
+failed: {}", error).into());
+}
+}
+
+loading_state.set(false);
+});
+})
+};
+
+let logout = {
+let user_state = user_state.clone();
+
+Callback::from(move |_| { storage::remove_tokens(); user_state.set(None);
+})
+};
+
+AuthContext {
+
+
+
+8.2 Component System
+
+
+// Reusable UI components #[derive(Properties, PartialEq)] pub struct ButtonProps {
+pub variant: Option, pub size: Option,
+pub disabled: Option,
+pub onclick: Callback, pub children: Children,
+}
+
+#[function_component(Button)]
+pub fn button(props: &ButtonProps) -> Html {
+let variant = props.variant.as_deref().unwrap_or("primary"); let size = props.size.as_deref().unwrap_or("medium");
+let disabled = props.disabled.unwrap_or(false);
+
+let classes = classes!( "btn",
+format!("btn--{}", variant),
+format!("btn--{}", size), disabled.then(|| "btn--disabled")
+);
+
+html! {
+
+
+
+
+{for props.children.iter()}
+
+
+
+
+
+}
+}
+
+// Form input component with validation #[derive(Properties, PartialEq)]
+pub struct InputProps {
+pub label: String,
+
+pub input_type: Option, pub placeholder: Option, pub value: String,
+pub onchange: Callback, pub error: Option,
+pub required: Option,
+}
+
+#[function_component(Input)]
+pub fn input(props: &InputProps) -> Html {
+let input_type = props.input_type.as_deref().unwrap_or("text"); let has_error = props.error.is_some();
+
+html! {
+
+
+
+
+
+
+
+
+
+
+})}
+
+{&props.label}
+{props.required.unwrap_or(false).then(|| html! { {"*"}
+
+
+
+
+
+
+{props.value.clone()}
+
+
+
+
+
+
+{error}
+}
+
+{if let Some(error) = &props.error { html! {
+
+
+} else {
+html! {}
+
+}}
+
+
+
+}
+}
+
+
+
+9. Deployment with PM System
+
+
+9.1 PM2 Ecosystem Configuration
+
+
+// ecosystem.config.js module.exports = {
+apps: [
+{
+
+name: 'rust-backend',
+script: './target/release/backend', cwd: './backend',
+instances: 'max',
+exec_mode: 'cluster', env: {
+NODE_ENV: 'production', RUST_LOG: 'info',
+DATABASE_URL: 'postgresql://user:password@localhost/dbname',
+JWT_SECRET: 'your-jwt-secret-here', REDIS_URL: 'redis://localhost:6379', PORT: 3000
+},
+env_development: { NODE_ENV: 'development', RUST_LOG: 'debug',
+PORT: 3001
+},
+error_file: './logs/err.log', out_file: './logs/out.log', log_file: './logs/combined.log', time: true,
+max_restarts: 10, min_uptime: '10s', max_memory_restart: '1G', watch: false,
+ignore_watch: ['node_modules', 'logs'], merge_logs: true
+},
+{
+name: 'rust-frontend-server', script: 'serve',
+args: '-s dist -l 8080', cwd: './frontend',
+env: {
+PM2_SERVE_PATH: './dist', PM2_SERVE_PORT: 8080, PM2_SERVE_SPA: 'true'
+},
+instances: 1, exec_mode: 'fork'
+}
+],
+
+deploy: { production: {
+user: 'deploy',
+host: 'your-server.com', ref: 'origin/main',
+repo: 'git@github.com:your-repo/rust-app.git',
+
+
+
+9.2 Deployment Scripts
+
+
+#!/bin/bash
+# scripts/deploy.sh set -e
+echo "?? Starting deployment process..."
+
+# Environment setup export RUST_LOG=info
+export DATABASE_URL=${DATABASE_URL:-"postgresql://localhost/appdb"}
+
+# Build backend
+echo "?? Building backend..." cd backend
+cargo build --release cd ..
+
+# Build frontend
+echo "?? Building frontend..." cd frontend
+trunk build --release cd ..
+
+# Database migrations
+echo "?? Running database migrations..." cd backend
+sqlx migrate run cd ..
+
+# Static file optimization
+echo "?? Optimizing static files..." cd frontend/dist
+gzip -r -k -f .
+cd ../..
+
+# Restart services with PM2
+echo "?? Restarting services..."
+pm2 restart ecosystem.config.js --env production
+
+
+
+9.3 Production Configuration
+
+Component
+Configuration
+Purpose
+
+Nginx Reverse Proxy
+
+Load balancing, SSL termination
+
+Handle HTTPS and distribute requests
+
+PostgreSQL
+
+Connection pooling, read replicas
+
+Database performance and reliability
+
+Redis Cache
+
+Session storage, API caching
+
+Improve response times
+
+PM2 Monitoring
+
+Process management, auto-restart
+
+Application availability
+
+Log Rotation
+
+logrotate configuration
+
+Disk space management
+
+SSL Certificates
+
+Let's Encrypt automation
+
+Secure communication
+
+10. Development Setup and Guidelines
+
+
+10.1 Development Environment Setup
+
+
+# Install Rust and required targets
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh rustup target add wasm32-unknown-unknown
+
+# Install required tools cargo install trunk
+cargo install sqlx-cli --no-default-features --features rustls,postgres cargo install cargo-watch
+
+# Install Node.js for PM2
+
+
+
+10.2 Development Guidelines
+
+Code Quality Standards
+
+
+Formatting: Use
+Linting: Run
+
+for consistent formatting to catch common mistakes
+
+Testing: Maintain >80% code coverage with unit and integration tests
+
+Documentation: Document all public APIs with	comments
+
+Security: Run	regularly for vulnerability checks
+
+
+Git Workflow
+
+
+1. Create feature branches from
+2. Use conventional commits:	,	,
+
+
+
+, etc.
+
+3. Require code review for all pull requests
+4. Run CI/CD pipeline before merging
+5. Deploy to staging before production
+
+Performance Optimization
+
+Backend: Use database connection pooling and query optimization
+Frontend: Implement code splitting and lazy loading Caching: Redis for session data, HTTP caching headers Monitoring: Use metrics collection and alerting
+10.3 Testing Strategy
+
+// Example test structure #[cfg(test)]
+mod tests {
+use super::*;
+use axum_test::TestServer;
+
+#[tokio::test]
+async fn test_user_registration() { let app = create_test_app().await;
+let server = TestServer::new(app).unwrap();
+
+let request_body = serde_json::json!({ "username": "testuser",
+"email": "test@example.com", "password": "SecurePassword123!"
+});
+
+let response = server
+.post("/api/v1/auth/register")
+.json(&request_body)
+     .await; assert_eq!(response.status_code(), 201);
+let body: serde_json::Value = response.json(); assert!(body["access_token"].is_string()); assert_eq!(body["user"]["email"], "test@example.com");
+}
+
+#[tokio::test]
+async fn test_protected_route_without_auth() { let app = create_test_app().await;
+
+
+
+
+
+This documentation provides a comprehensive guide for building a secure, modern web application using Rust for both backend and frontend development. The architecture emphasizes security, performance, and maintainability while providing an excellent user experience with responsive design and theme support.
+For technical support and updates, refer to the project repository and API documentation.
