@@ -30,10 +30,7 @@ pub fn use_theme() -> (Theme, Callback<MouseEvent>) {
     let toggle_theme = {
         let theme = theme.clone();
         Callback::from(move |_| {
-            theme.set(match *theme {
-                Theme::Light => Theme::Dark,
-                Theme::Dark => Theme::Light,
-            });
+            theme.set(theme.toggle());
         })
     };
 
@@ -66,20 +63,21 @@ pub fn app() -> Html {
         let set_error = error.clone();
         
         Callback::from(move |_| {
-            set_message("Loading...".to_string());
-            set_error(String::new());
+            set_message.set("Loading...".to_string());
+            set_error.set(String::new());
             
             let set_message = set_message.clone();
             let set_error = set_error.clone();
             
             spawn_local(async move {
                 match fetch_hello().await {
-                          set_message.set(text);
-             set_message(text);
-                    }
-                             set_error.set(format!("Error: {}", e));
+                    Ok(text) => {
+                        set_message.set(text);
+                        set_error.set(String::new());
+                    },
+                    Err(e) => {
+                        set_error.set(format!("Error: {}", e));
                         set_message.set(String::new());
-et_message(String::new());
                     }
                 }
             });
@@ -96,15 +94,19 @@ et_message(String::new());
                 <p>{"Click the button below to fetch a greeting from the backend:"}</p>
                 <button class="btn-primary" onclick={on_fetch_hello}>
                     {"Fetch Greeting"}
-                if !(*message).is_empty() {
-                    <p class    ="message">{ &*message }</p>    
-                }
+                </button>
 
-                if !(*error).is_empty() {
-                    <p class="error">{ &*error }</p>
-                }
- <p class="error">{ &error }</p>
-                }
+                {if !(*message).is_empty() {
+                    html! { <p class="message">{ &*message }</p> }
+                } else {
+                    html! {}
+                }}
+
+                {if !(*error).is_empty() {
+                    html! { <p class="error">{ &*error }</p> }
+                } else {
+                    html! {}
+                }}
             </main>
         </div>
     }
